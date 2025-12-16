@@ -1,72 +1,79 @@
 'use client';
 
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useDebounce } from 'use-debounce';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { fetchNotes } from '@/lib/api';
 import NoteList from '@/components/NoteList/NoteList';
-import SearchBox from '@/components/SearchBox/SearchBox';
 import Pagination from '@/components/Pagination/Pagination';
-import Modal from '@/components/Modal/Modal';
-import NoteForm from '@/components/NoteForm/NoteForm';
+import SearchBox from '@/components/SearchBox/SearchBox';
+import Loader from '@/components/Loader/Loader';
+import ErrorMessage from '@/components/ErrorMessage/ErrorMessage';
 import css from './page.module.css';
 
-const PER_PAGE = 12;
-
-interface NotesProps {
+interface NotesClientProps {
   tag?: string;
 }
 
-export default function NotesClient({ tag }: NotesProps) {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [debouncedSearch] = useDebounce(search, 500);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+export default function NotesClient({ tag }: NotesClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['notes', page, debouncedSearch, tag],
-    queryFn: () =>
-      fetchNotes({
-        page,
-        perPage: PER_PAGE,
-        search: debouncedSearch || undefined,
-        tag,
-      }),
+
+  const search = searchParams.get('search') || '';
+  const page = Number(searchParams.get('page')) || 1;
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['notes', page, search, tag],
+    queryFn: () => fetchNotes({ page, perPage: 12, search, tag }),
   });
 
-  const notes = data?.notes ?? [];
-  const totalPages = data?.totalPages ?? 0;
 
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setPage(1);
+  const handleSearch = (value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    
+    if (value) {
+      params.set('search', value);
+    } else {
+      params.delete('search');
+    }
+    
+    params.set('page', '1');
+    
+    router.replace(`${pathname}?${params.toString()}`);
   };
 
-  if (isLoading) return <p>Loading notes...</p>;
-  if (error) return <p>Error loading notes</p>;
+  const handlePageChange = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', newPage.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   return (
-    <div className={css.app}>
+    <div className={css.container}>
       <div className={css.toolbar}>
-        <SearchBox value={search} onChange={handleSearchChange} />
-
-        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
-
-        <button
-          type="button"
-          className={css.button}
-          onClick={() => setIsModalOpen(true)}
-        >
+        <SearchBox value={search} onChange={handleSearch} />
+        
+        <Link href="/notes/action/create" className={css.button}>
           Create note +
-        </button>
+        </Link>
       </div>
 
-      {notes.length > 0 && <NoteList notes={notes} />}
-
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm onClose={() => setIsModalOpen(false)} />
-        </Modal>
+      {isLoading && <Loader />}
+      {isError && <ErrorMessage />}
+      
+      {data && (
+        <>
+          <NoteList notes={data.notes} />
+          {data.totalPages > 1 && (
+             <Pagination 
+               page={data.currentPage} 
+               totalPages={data.totalPages} 
+               onChange={handlePageChange} 
+             />
+          )}
+        </>
       )}
     </div>
   );

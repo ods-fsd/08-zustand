@@ -1,49 +1,41 @@
-'use client';
-
-import { useRouter, useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { Metadata } from 'next';
 import { fetchNoteById } from '@/lib/api';
-import Modal from '@/components/Modal/Modal';
-import css from './page.module.css'; 
+import NoteDetailsClient from './NoteDetails.client';
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  
+  try {
+    const note = await fetchNoteById(id);
+    
+    return {
+      title: note.title,
+      description: note.content.slice(0, 150),
+      openGraph: {
+        title: note.title,
+        description: note.content.slice(0, 150),
+        url: `/notes/${id}`,
+        images: [
+          {
+            url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
+            width: 1200,
+            height: 630,
+          },
+        ],
+      },
+    };
+  } catch (error) {
+    return {
+      title: 'Note not found',
+      description: 'The requested note could not be found',
+    };
+  }
+}
 
 export default function NotePage() {
-  const router = useRouter();
-  const params = useParams();
-  const id = params.id as string;
-
-  const { data: note, isLoading, error } = useQuery({
-    queryKey: ['note', id],
-    queryFn: () => fetchNoteById(id),
-  });
-
-  const handleClose = () => router.back();
-
-  if (isLoading) {
-    return (
-      <Modal onClose={handleClose}>
-        <p>Loading...</p>
-      </Modal>
-    );
-  }
-
-  if (error || !note) {
-    return (
-      <Modal onClose={handleClose}>
-        <p>Note not found</p>
-      </Modal>
-    );
-  }
-
-  return (
-    <Modal onClose={handleClose}>
-      <div className={css.container}>
-        <h2 className={css.title}>{note.title}</h2>
-        {note.tag && <span className={css.tag}>{note.tag}</span>}
-        <p className={css.content}>{note.content}</p>
-        <p className={css.date}>
-          {new Date(note.createdAt).toLocaleDateString()}
-        </p>
-      </div>
-    </Modal>
-  );
+  return <NoteDetailsClient />;
 }

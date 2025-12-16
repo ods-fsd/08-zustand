@@ -1,47 +1,57 @@
 .pagination {
     display: flex;
     justify-content: center;
-    gap: 4px;
-    margin: 16px 0;
+    align-items: center;
+    gap: 8px;
+    margin-top: 32px;
     list-style: none;
     padding: 0;
-    margin: 0;
 }
 
-.pagination li {
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    cursor: pointer;
-    min-width: 36px;
-    height: 36px;
-    transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.pagination li a {
+.button {
     display: flex;
-    align-items: center;
     justify-content: center;
-    width: 100%;
-    height: 100%;
-    text-decoration: none;
-    color: #0d6efd;
+    align-items: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 6px;
+    border: 1px solid var(--border);
+    background-color: var(--background);
+    color: var(--foreground);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: inherit;
     font-size: 14px;
+    transition: all 0.2s ease;
 }
 
-.pagination li:hover {
-    background-color: #e9ecef;
-}
-
-.pagination li.active:hover {
-    background-color: #0d6efd;
+.button:hover:not(:disabled):not(.dots) {
+    border-color: var(--foreground);
+    background-color: var(--foreground);
+    color: var(--background);
 }
 
 .active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
+    border-color: var(--foreground);
+    background-color: var(--foreground);
+    color: var(--background);
+    font-weight: 500;
 }
 
-.active a {
-    color: #fff !important;
-    font-weight: 500;
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: var(--border);
+}
+
+.dots {
+    border: none;
+    background: none;
+    cursor: default;
+}
+
+.dots:hover {
+    background: none;
+    color: var(--foreground);
+    border: none;
 }

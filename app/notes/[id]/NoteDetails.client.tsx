@@ -1,11 +1,13 @@
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { fetchNoteById } from '@/lib/api';
-import css from './NoteDetails.module.css';
+import Modal from '@/components/Modal/Modal';
+import css from './page.module.css'; 
 
-export default function NoteDetails() {
+export default function NoteDetailsClient() {
+  const router = useRouter();
   const params = useParams();
   const id = params.id as string;
 
@@ -14,15 +16,34 @@ export default function NoteDetails() {
     queryFn: () => fetchNoteById(id),
   });
 
-  if (isLoading) return <p>Loading note...</p>;
-  if (error || !note) return <p>Note not found</p>;
+  const handleClose = () => router.back();
+
+  if (isLoading) {
+    return (
+      <Modal onClose={handleClose}>
+        <p>Loading...</p>
+      </Modal>
+    );
+  }
+
+  if (error || !note) {
+    return (
+      <Modal onClose={handleClose}>
+        <p>Note not found</p>
+      </Modal>
+    );
+  }
 
   return (
-    <div className={css.container}>
-      <h2 className={css.title}>{note.title}</h2>
-      {note.tag && <span className={css.tag}>{note.tag}</span>}
-      <p className={css.content}>{note.content}</p>
-      <p className={css.date}>{new Date(note.createdAt).toLocaleDateString()}</p>
-    </div>
+    <Modal onClose={handleClose}>
+      <div className={css.container}>
+        <h2 className={css.title}>{note.title}</h2>
+        {note.tag && <span className={css.tag}>{note.tag}</span>}
+        <p className={css.content}>{note.content}</p>
+        <p className={css.date}>
+          {new Date(note.createdAt).toLocaleDateString()}
+        </p>
+      </div>
+    </Modal>
   );
 }
