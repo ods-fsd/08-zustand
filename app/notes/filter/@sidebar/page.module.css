@@ -1,0 +1,14 @@
+.menuList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.menuItem {
+    margin-bottom: 8px;
+}
+
+.menuLink {
+    text-decoration: none;
+    color: #0d6efd;
+}
