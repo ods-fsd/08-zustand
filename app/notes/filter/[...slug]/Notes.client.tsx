@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react'; 
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useDebounce } from 'use-debounce'; 
 import Link from 'next/link';
 import { fetchNotes } from '@/lib/api';
 import NoteList from '@/components/NoteList/NoteList';
@@ -21,20 +23,27 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const pathname = usePathname();
 
 
-  const search = searchParams.get('search') || '';
+  const searchFromUrl = searchParams.get('search') || '';
   const page = Number(searchParams.get('page')) || 1;
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['notes', page, search, tag],
-    queryFn: () => fetchNotes({ page, perPage: 12, search, tag }),
-  });
+
+  const [searchTerm, setSearchTerm] = useState(searchFromUrl);
+  
+  const [debouncedSearch] = useDebounce(searchTerm, 300);
 
 
-  const handleSearch = (value: string) => {
+  useEffect(() => {
+    setSearchTerm(searchFromUrl);
+  }, [searchFromUrl]);
+
+
+  useEffect(() => {
+    if (debouncedSearch === searchFromUrl) return;
+
     const params = new URLSearchParams(searchParams.toString());
     
-    if (value) {
-      params.set('search', value);
+    if (debouncedSearch) {
+      params.set('search', debouncedSearch);
     } else {
       params.delete('search');
     }
@@ -42,6 +51,15 @@ export default function NotesClient({ tag }: NotesClientProps) {
     params.set('page', '1');
     
     router.replace(`${pathname}?${params.toString()}`);
+  }, [debouncedSearch, pathname, router, searchParams, searchFromUrl]);
+
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['notes', page, searchFromUrl, tag],
+    queryFn: () => fetchNotes({ page, perPage: 12, search: searchFromUrl, tag }),
+  });
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -52,15 +70,16 @@ export default function NotesClient({ tag }: NotesClientProps) {
 
   return (
     <div className={css.container}>
-      <div className={css.toolbar}>
-        <SearchBox value={search} onChange={handleSearch} />
+      <div className={css.topBar}>
+        <SearchBox value={searchTerm} onChange={handleSearch} />
         
-        <Link href="/notes/action/create" className={css.button}>
+        <Link href="/notes/action/create" className={css.createBtn}>
           Create note +
         </Link>
       </div>
 
       {isLoading && <Loader />}
+      
       {isError && <ErrorMessage />}
       
       {data && (
